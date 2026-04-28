@@ -1,10 +1,14 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs-extra');
-const path = require('path');
+const readline = require('readline');
 const { handleMessage } = require('./commands/handler');
 
 const BOT_NAME = "King Dizzy Digital Bot";
+
+// Put your WhatsApp number here (with country code, no + or spaces)
+// Example: if your number is +234 704 299 9216, type 2347042999216
+const MY_NUMBER = "2348108986958";
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
@@ -13,10 +17,28 @@ async function startBot() {
     const sock = makeWASocket({
         version,
         logger: pino({ level: 'silent' }),
-        printQRInTerminal: true,
+        printQRInTerminal: false,
         auth: state,
-        browser: [BOT_NAME, 'Chrome', '1.0.0'],
+        browser: ['Ubuntu', 'Chrome', '20.0.04'],
     });
+
+    // Generate pairing code if not already logged in
+    if (!sock.authState.creds.registered) {
+        const number = MY_NUMBER.replace(/[^0-9]/g, '');
+        setTimeout(async () => {
+            try {
+                const code = await sock.requestPairingCode(number);
+                console.log('\n\n');
+                console.log('======================================');
+                console.log(`   YOUR PAIRING CODE: ${code}   `);
+                console.log('======================================');
+                console.log('Go to WhatsApp > Linked Devices > Link with phone number');
+                console.log('Enter the code above\n\n');
+            } catch (err) {
+                console.error('Error generating pairing code:', err);
+            }
+        }, 3000);
+    }
 
     sock.ev.on('creds.update', saveCreds);
 
@@ -39,3 +61,4 @@ async function startBot() {
 }
 
 startBot().catch(console.error);
+                    
